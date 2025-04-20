@@ -1,10 +1,8 @@
-classdef Road<handle
-    % Road 車両の走行道路を表すクラス
+classdef Lane<handle
+    % Lane 車両の走行道路を表すクラス
     properties(GetAccess = 'public', SetAccess = 'private')
+        Lane_ID = [] % 道路のID
 
-        Road_ID = [] % 道路のID
-
-        Lane_Number = [] % 車線数
         WIDTH = [] % 道路の幅
 
         start_position = [] % 道路の開始位置 (m)
@@ -15,10 +13,10 @@ classdef Road<handle
 
     methods
 
-        function obj = Road(Road_ID, Lane_Number, start_position_m, end_position_m)
+        function obj = Lane(Lane_ID, start_position_m, end_position_m)
             % 道路の初期化
-            obj.Road_ID = Road_ID;
-            obj.WIDTH = 3.5 * Lane_Number; % 道路の幅 (m)
+            obj.Lane_ID = Lane_ID;
+            obj.WIDTH = 3.5; % 道路の幅 (m)
 
             % 道路の開始位置と終了位置を設定
             obj.start_position = start_position_m; % 開始位置 (m)
@@ -28,10 +26,12 @@ classdef Road<handle
             obj.Vehicles = dictionary; % 道路上の車両リスト
         end
 
-        function add_Vehicle(obj, Vehicle)
+        function add_Vehicle(obj, Vehicle, init_position_m, init_velocity_m_s)
             % 車両を道路に追加
             obj.Vehicles(Vehicle_ID) = Vehicle;
-            Vehicle.Road_ID; % 車両の道路IDを設定
+            Vehicle.Lane_ID = obj.Lane_ID; % 車両の道路IDを設定
+            Vehicle.position = init_position_m; % 車両の初期位置を設定
+            Vehicle.velocity = init_velocity_m_s; % 車両の初期速度を設定
         end
 
         function remove_Vehicle(obj, Vehicle_ID)
@@ -39,7 +39,7 @@ classdef Road<handle
             if isKey(obj.Vehicles, Vehicle_ID)
                 remove(obj.Vehicles, Vehicle_ID);
             else
-                error('Vehicle ID not found in the road!');
+                error('Vehicle ID not found in the lane!');
             end
         end
     end

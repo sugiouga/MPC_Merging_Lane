@@ -1,12 +1,9 @@
 classdef Vehicle<handle
     % Vehicle 車両の基本クラス
-    properties(GetAccess = 'public')
-        Road_ID = [] % 車両が走行している道路のID
-    end
-
     properties(GetAccess = 'public', SetAccess = 'private')
         % 車両の基本情報
         Vehicle_ID = [] % 車両のID
+        Lane_ID = [] % 車両が走行している道路のID
         TIME_STEP = [] % 時間刻み
 
         Vehicle_TYPE = [] % 車両の種類
@@ -25,21 +22,21 @@ classdef Vehicle<handle
         MAX_VELOCITY = [] % 車両の最大速度
         MIN_ACCELERATION = [] % 車両の最小加速度
         MAX_ACCELERATION = [] % 車両の最大加速度
-
     end
 
     methods
 
-        function obj = Vehicle(Vehicle_ID, Vehicle_TYPE, Controller, init_position_m, init_velocity_m_s)
+        function obj = Vehicle(Vehicle_ID, Vehicle_TYPE, Controller)
+            config; % config.mを読み込む
             % 車両の初期化
             obj.Vehicle_ID = Vehicle_ID;
-            obj.Road_ID = 0;
+            obj.Lane_ID = 0;
             obj.Vehicle_TYPE = Vehicle_TYPE;
             obj.TIME_STEP = TIME_STEP;
 
             % 初期状態を設定
-            obj.position = init_position_m; % 現在位置
-            obj.velocity = init_velocity_m_s; % 現在速度
+            obj.position = 0; % 現在位置
+            obj.velocity = 0; % 現在速度
             obj.acceleration = 0; % 現在加速度
             obj.jerk = 0; % 現在ジャーク
 
@@ -65,15 +62,19 @@ classdef Vehicle<handle
             obj.MAX_ACCELERATION = 2; % 車両の最大加速度 (m/s^2)
         end
 
-        function get_information(obj)
-            % 車両の情報を取得する
-            information = struct('Vehicle_ID', obj.Vehicle_ID, 'Road_ID', obj.Road_ID, 'TYPE', obj.Vehicle_TYPE, ...
-                'Position', obj.position, 'Velocity', obj.velocity, 'Acceleration', obj.acceleration, 'Jerk', obj.jerk);
+        function set_init_position(obj, init_position_m)
+            % 車両の初期位置を設定する
+            obj.position = init_position_m;
         end
 
-        function set_Road_ID(obj, Road_ID)
+        function set_init_velocity(obj, init_velocity_m_s)
+            % 車両の初期速度を設定する
+            obj.velocity = init_velocity_m_s;
+        end
+
+        function set_Lane_ID(obj, Lane_ID)
             % 車両の走行している道路を設定する
-            obj.Road_ID = Road_ID;
+            obj.Lane_ID = Lane_ID;
         end
 
         function set_Controller(obj, Controller)
@@ -112,7 +113,5 @@ classdef Vehicle<handle
                 obj.velocity = obj.MAX_VELOCITY;
             end
         end
-    end
-
     end
 end
