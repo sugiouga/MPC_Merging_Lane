@@ -85,8 +85,8 @@ classdef Vehicle<handle
 
         function update(obj)
             % 制御器から加速度入力を受け取る
-            if ~isempty(obj.Controller)
-                obj.input = obj.Controller;
+            if ~isempty(obj.Controller(obj))
+                obj.input = obj.Controller(obj);
             end
 
             % 車両の加速度入力を制限する

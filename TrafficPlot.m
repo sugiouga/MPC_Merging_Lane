@@ -1,24 +1,32 @@
 Y_offset = 0.0;
 Xminp = 0;
-Xmxp = 1600;
-fm = 1
+Xmaxp = 1600;
 
 plt = [];
 
-y0=Y_offset+[L0(1:end).Y]'+1;
-x0=[L0(1:end).X]';
-plt(end+1)=plot(x0, y0, 'sk', 'LineWidth',0.01,  'MarkerSize', 4.5,'MarkerFaceColor', [0 0.4470 0.7410]); %, 'MarkerFacColor', Clr2(J,:)
-plt(end+1)=plot(x0-3, y0, 'sk', 'LineWidth',0.01, 'MarkerSize', 6,'MarkerFaceColor', [0 0.4470 0.7410]); %, 'MarkerFacColor', Clr2(J,:)
+% メインレーンの車両をプロット
+main_vehicles = values(MainLane.Vehicles); % メインレーンの車両リストを取得
+for i = 1:length(main_vehicles)
+    vehicle = main_vehicles{i};
+    x = vehicle.position; % 車両の位置
+    y = 1 + Y_offset; % メインレーンのY座標
+    plt(end+1) = plot(x, y, 'o', 'MarkerSize', 6, 'MarkerFaceColor', [0 0.4470 0.7410], 'MarkerEdgeColor', 'k');
+end
 
-x1 = [L1(1:end).X]';
-y1 = Y_offset+(4-3./(1.+exp(-0.02*(x1-800.0))));
-plt(end+1)=plot(x1, y1, 'sk', 'LineWidth',0.01,  'MarkerSize', 4.5,'MarkerFaceColor', [0.8500 0.3250 0.0980]); %, 'MarkerFacColor', Clr2(J,:)
-plt(end+1)=plot(x1-3, y1, 'sk', 'LineWidth',0.01, 'MarkerSize', 6,'MarkerFaceColor', [0.8500 0.3250 0.0980]); %, 'MarkerFacColor', Clr2(J,:)
+% サブレーンの車両をプロット
+sub_vehicles = values(SubLane.Vehicles); % サブレーンの車両リストを取得
+for i = 1:length(sub_vehicle_positions)
+    vehicle = sub_vehicles{i};
+    x = vehicle.position; % 車両の位置
+    y =  Y_offset + (4-3./(1.+exp(-0.02*(x-800.0)))); % サブレーンのY座標
+    plt(end+1) = plot(x, y, 'o', 'MarkerSize', 6, 'MarkerFaceColor', [0.8500 0.3250 0.0980], 'MarkerEdgeColor', 'k');
+end
 
-Msg=sprintf('Simulation time 00:%d:%02d',floor(dt*(KK-1)/60),mod(floor(dt*(KK-1)),60));
+% タイトルと軸の設定
+Msg = sprintf('Simulation time 00:%d:%02d', floor(dt * (KK - 1) / 60), mod(floor(dt * (KK - 1)), 60));
 title(Msg);
-axis([Xminp, Xmxp, 0.0, 5+Y_offset]);
+axis([Xminp, Xmaxp, 0.0, 5 + Y_offset]);
 grid on;
 xlabel('X');
-M(fm)=getframe(hFig);
-fm=fm+1;
+M(fm) = getframe(hFig);
+fm = fm + 1;
