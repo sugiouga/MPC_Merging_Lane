@@ -15,9 +15,10 @@ classdef Vehicle<handle
         acceleration = [] % 現在加速度
         jerk = [] % 現在ジャーク
 
-        Controller = [] % 車両の制御器
+        Vehicle_Controller = [] % 車両の制御器
         input = [] % 入力は加速度
 
+        REFERENCE_VELOCITY = [] % 参照速度 (m/s)
         MIN_VELOCITY = [] % 車両の最小速度
         MAX_VELOCITY = [] % 車両の最大速度
         MIN_ACCELERATION = [] % 車両の最小加速度
@@ -26,7 +27,7 @@ classdef Vehicle<handle
 
     methods
 
-        function obj = Vehicle(Vehicle_ID, Vehicle_TYPE, Controller)
+        function obj = Vehicle(Vehicle_ID, Vehicle_TYPE)
             config; % config.mを読み込む
             % 車両の初期化
             obj.Vehicle_ID = Vehicle_ID;
@@ -40,7 +41,6 @@ classdef Vehicle<handle
             obj.acceleration = 0; % 現在加速度
             obj.jerk = 0; % 現在ジャーク
 
-            obj.Controller = Controller; % 車両の制御器
             obj.input = 0; % 入力は加速度
 
             % 車両の長さと幅を設定
@@ -56,6 +56,7 @@ classdef Vehicle<handle
             end
 
             % 車両の速度と加速度を設定
+            obj.REFERENCE_VELOCITY = REFERENCE_VELOCITY; % 参照速度 (m/s)
             obj.MIN_VELOCITY = 0; % 車両の最小速度 (m/s)
             obj.MAX_VELOCITY = 30; % 車両の最大速度 (m/s)
             obj.MIN_ACCELERATION = -3; % 車両の最小加速度 (m/s^2)
@@ -77,17 +78,7 @@ classdef Vehicle<handle
             obj.Lane_ID = Lane_ID;
         end
 
-        function set_Controller(obj, Controller)
-            % 車両の制御器を設定する
-            obj.Controller = Controller;
-        end
-
-
         function update(obj)
-            % 制御器から加速度入力を受け取る
-            if ~isempty(obj.Controller(obj))
-                obj.input = obj.Controller(obj);
-            end
 
             % 車両の加速度入力を制限する
             if obj.input < obj.MIN_ACCELERATION
@@ -111,6 +102,32 @@ classdef Vehicle<handle
                 obj.velocity = obj.MIN_VELOCITY;
             elseif obj.velocity > obj.MAX_VELOCITY
                 obj.velocity = obj.MAX_VELOCITY;
+            end
+        end
+
+        function IDM(obj, lead_vehicle)
+            % Intelligent Driver Model (IDM)を使用して車両の加速度を計算する
+            % lead_vehicle: 前方車両のオブジェクト
+            % 車両の加速度を計算する
+            if isempty(lead_vehicle)
+                obj.input = (obj.REFERENCE_VELOCITY - obj.velocity) / obj.TIME_STEP; % 目標速度に向かう加速度
+            else
+                % 車間距離と相対速度を計算する
+                distance = lead_vehicle.position - obj.position - lead_vehicle.LENGTH; % 車間距離 (m)
+                relative_velocity = obj.velocity - lead_vehicle.velocity; % 相対速度 (m/s)
+
+                % IDMの式を使用して加速度を計算する
+                min_distance = 1.5; % 最小車間距離 (m)
+                desired_time_headway = 1.3; % 目標時間間隔 (s)
+                max_acceleration = obj.MAX_ACCELERATION; % 最大加速度 (m/s^2)
+                comfortable_deceleration = 2.5; % 快適減速度 (m/s^2)
+
+                % 車間距離の目標値 (m)
+                s_star = min_distance + obj.velocity * desired_time_headway + ...
+                         (obj.velocity * relative_velocity) / (2 * sqrt(max_acceleration * comfortable_deceleration));
+
+                % IDMの加速度計算式
+                obj.input = max_acceleration * (1 - (obj.velocity / obj.REFERENCE_VELOCITY)^4 - (s_star / distance)^2);
             end
         end
     end
