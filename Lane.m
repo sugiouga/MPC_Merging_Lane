@@ -8,7 +8,7 @@ classdef Lane<handle
         start_position = [] % 道路の開始位置 (m)
         end_position = [] % 道路の終了位置 (m)
 
-        Vehicles = dictionary % 道路上の車両リスト
+        Vehicles = [] % 道路上の車両リスト
     end
 
     methods
@@ -27,17 +27,43 @@ classdef Lane<handle
         end
 
         function add_Vehicle(obj, Vehicle, init_position_m, init_velocity_m_s)
+            % 車両の初期位置と速度を設定
+            Vehicle.set_init_position(init_position_m); % メソッドを呼び出して初期位置を設定
+            Vehicle.set_init_velocity(init_velocity_m_s); % メソッドを呼び出して初期速度を設定
+            Vehicle.set_Lane_ID(obj.Lane_ID); % メソッドを呼び出してレーンIDを設定
+
             % 車両を道路に追加
-            obj.Vehicles(Vehicle_ID) = Vehicle;
-            Vehicle.Lane_ID = obj.Lane_ID; % 車両の道路IDを設定
-            Vehicle.position = init_position_m; % 車両の初期位置を設定
-            Vehicle.velocity = init_velocity_m_s; % 車両の初期速度を設定
+            obj.Vehicles(Vehicle.Vehicle_ID) = Vehicle;
         end
 
         function remove_Vehicle(obj, Vehicle_ID)
             % 車両を道路から削除
             if isKey(obj.Vehicles, Vehicle_ID)
-                remove(obj.Vehicles, Vehicle_ID);
+                obj.Vehicles = remove(obj.Vehicles, Vehicle_ID);
+            else
+                error('Vehicle ID not found in the lane!');
+            end
+        end
+
+        function lead_vehicle = get_lead_vehicle(obj, Vehicle_ID)
+            % 車両の最も近い先行車両を取得
+            if isKey(obj.Vehicles, Vehicle_ID)
+                Vehicle = obj.Vehicles(Vehicle_ID);
+                lead_vehicle = []; % 前方車両の初期化
+                min_distance = inf; % 最小距離の初期化
+
+                % 前方車両を検索
+                keys = obj.Vehicles.keys;
+                for i = 1:length(keys)
+                    other_vehicle = obj.Vehicles(keys(i));
+                    if other_vehicle.position > Vehicle.position
+                        distance = other_vehicle.position - Vehicle.position;
+                        if distance < min_distance
+                            min_distance = distance;
+                            lead_vehicle = other_vehicle; % 最も近い前方車両を設定
+                        end
+                    end
+                end
             else
                 error('Vehicle ID not found in the lane!');
             end
