@@ -47,64 +47,40 @@ classdef Lane<handle
             end
         end
 
-        function lead_vehicle = get_lead_vehicle(obj, Vehicle_ID)
+        function lead_vehicle = get_lead_vehicle(obj, position_m)
             % 車両の最も近い先行車両を取得
-            if isKey(obj.Vehicles, Vehicle_ID)
-                Vehicle = obj.Vehicles(Vehicle_ID);
-                lead_vehicle = []; % 前方車両の初期化
-                min_distance = inf; % 最小距離の初期化
+            lead_vehicle = []; % 前方車両の初期化
+            min_distance = inf; % 最小距離の初期化
 
-                % 前方車両を検索
-                keys = obj.Vehicles.keys;
-                for i = 1:length(keys)
-                    other_vehicle = obj.Vehicles(keys(i));
-                    if other_vehicle.position > Vehicle.position
-                        distance = other_vehicle.position - Vehicle.position;
-                        if distance < min_distance
-                            min_distance = distance;
-                            lead_vehicle = other_vehicle; % 最も近い前方車両を設定
-                        end
+            % 前方車両を検索
+            keys = obj.Vehicles.keys;
+            for i = 1:length(keys)
+                other_vehicle = obj.Vehicles(keys(i));
+                if other_vehicle.position > position_m
+                    distance = other_vehicle.position - position_m;
+                    if distance < min_distance
+                        min_distance = distance;
+                        lead_vehicle = other_vehicle; % 最も近い前方車両を設定
                     end
                 end
-            else
-                error('Vehicle ID not found in the lane!');
             end
         end
 
-        function follow_vehicle = get_follow_vehicle(obj, Vehicle_ID)
+        function follow_vehicle = get_follow_vehicle(obj, position_m)
             % 車両の最も近い後続車両を取得
-            if isKey(obj.Vehicles, Vehicle_ID)
-                Vehicle = obj.Vehicles(Vehicle_ID);
-                follow_vehicle = []; % 後続車両の初期化
-                min_distance = inf; % 最小距離の初期化
+            follow_vehicle = []; % 後続車両の初期化
+            min_distance = inf; % 最小距離の初期化
 
-                % 後続車両を検索
-                keys = obj.Vehicles.keys;
-                for i = 1:length(keys)
-                    other_vehicle = obj.Vehicles(keys(i));
-                    if other_vehicle.position < Vehicle.position
-                        distance = Vehicle.position - other_vehicle.position;
-                        if distance < min_distance
-                            min_distance = distance;
-                            follow_vehicle = other_vehicle; % 最も近い後続車両を設定
-                        end
+            % 後続車両を検索
+            keys = obj.Vehicles.keys;
+            for i = 1:length(keys)
+                other_vehicle = obj.Vehicles(keys(i));
+                if other_vehicle.position < position_m
+                    distance =  position_m - other_vehicle.position;
+                    if distance < min_distance
+                        min_distance = distance;
+                        follow_vehicle = other_vehicle; % 最も近い後続車両を設定
                     end
-                end
-            else
-                error('Vehicle ID not found in the lane!');
-            end
-        end
-
-        function nearby_vehicles = get_nearby_vehicles(obj, vehicle_position, range)
-            % 自車両の前後 range (m) 以内の車両を取得する
-            nearby_vehicles = []; % 結果を格納する配列
-            all_vehicles = values(obj.Vehicles); % 道路上のすべての車両を取得
-
-            for i = 1:length(all_vehicles)
-                other_vehicle = all_vehicles{i};
-                distance = abs(other_vehicle.position - vehicle_position); % 距離を計算
-                if distance <= range
-                    nearby_vehicles = [nearby_vehicles, other_vehicle]; % 範囲内の車両を追加
                 end
             end
         end

@@ -58,11 +58,11 @@ classdef Vehicle<handle
             end
 
             % 車両の速度と加速度を設定
-            obj.REFERENCE_VELOCITY = 25; % 参照速度 (m/s)
             obj.MIN_VELOCITY = 0; % 車両の最小速度 (m/s)
             obj.MAX_VELOCITY = 30; % 車両の最大速度 (m/s)
-            obj.MIN_ACCELERATION = -30; % 車両の最小加速度 (m/s^2)
-            obj.MAX_ACCELERATION = 20; % 車両の最大加速度 (m/s^2)
+            obj.REFERENCE_VELOCITY = obj.MAX_VELOCITY; % 参照速度 (m/s)
+            obj.MIN_ACCELERATION = -3; % 車両の最小加速度 (m/s^2)
+            obj.MAX_ACCELERATION = 2; % 車両の最大加速度 (m/s^2)
         end
 
         function set_Lane_ID(obj, Lane_ID)
@@ -146,7 +146,7 @@ classdef Vehicle<handle
             end
         end
 
-        function simpleMPC(obj, lead_vehicle, follow_vehicle, end_position)
+        function MPC(obj, lead_vehicle, follow_vehicle, end_position)
             % MPCを使用して車両の加速度を計算する
             % 状態は[位置, 速度]
             % 入力は加速度
@@ -174,10 +174,14 @@ classdef Vehicle<handle
             F_matrix = get_F_matrix(obj.PREDICTION_HORIZON, obj.TIME_STEP); % F行列を取得
             G_matrix = get_G_matrix(obj.PREDICTION_HORIZON, obj.TIME_STEP); % G行列を取得
             A = [G_matrix; -G_matrix];
-            b = [lead_vehicle_status - F_matrix*init_ego_vehicle_status; -follow_vehicle_status + F_matrix*init_ego_vehicle_status]; % 不等式制約
+            b = [-F_matrix*init_ego_vehicle_status; F_matrix*init_ego_vehicle_status]; % 不等式制約
+            b(1:2:2*obj.PREDICTION_HORIZON-1) = b(1:2:2*obj.PREDICTION_HORIZON-1) + lead_vehicle_status(1:2:end-1);
+            b(2*obj.PREDICTION_HORIZON+1:2:end-1) = b(2*obj.PREDICTION_HORIZON+1:2:end-1) - follow_vehicle_status(1:2:end-1);
+            b(2:2:2*obj.PREDICTION_HORIZON) = b(2:2:2*obj.PREDICTION_HORIZON) + repmat(obj.MAX_VELOCITY, obj.PREDICTION_HORIZON, 1);
+            b(2*obj.PREDICTION_HORIZON+2:2:end) = b(2*obj.PREDICTION_HORIZON+2:2:end) - repmat(obj.MIN_VELOCITY, obj.PREDICTION_HORIZON, 1);
 
             % エゴ車両の目標状態を設定する
-            ratio = 0.8;
+            ratio = 0.3;
             reference_status = (1-ratio)*lead_vehicle_status + ratio*follow_vehicle_status;
 
             % 評価関数を設定する
