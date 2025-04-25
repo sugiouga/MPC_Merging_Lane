@@ -11,7 +11,7 @@ LaneMerge.add_Lane(MainLane); % メインレーンの追加
 LaneMerge.add_Lane(SubLane); % サブレーンの追加
 
 % メインレーンの車両を追加
-for Vehicle_ID = 1:30
+for Vehicle_ID = 1:20
     % 車両をメインレーンに追加
     MainLane.add_Vehicle(Vehicle(Vehicle_ID, 'CAR'), MainLane.end_position - 150 * Vehicle_ID, 25);
 end
@@ -55,7 +55,7 @@ for step = 1 : 10000 % シミュレーション時間のループ
             % メインレーンの前方車両を取得
             lead_vehicle_in_MainLane = MainLane.get_lead_vehicle(vehicle.position);
             % 車両の加速度を計算
-            vehicle.IDM(lead_vehicle_in_MainLane);
+            vehicle.constant_speed();
         end
 
         % 車両の状態を更新
@@ -78,7 +78,7 @@ for step = 1 : 10000 % シミュレーション時間のループ
             % 車両の加速度を計算
             vehicle.MPC(lead_vehicle_in_MainLane, follow_vehicle_in_MainLane, MainLane.end_position); % 車両の加速度を計算
         else            % サブレーンの前方車両を取得
-            lead_vehicle_in_SubLane = SubLane.get_lead_vehicle(vehicle.Vehicle_ID);
+            lead_vehicle_in_SubLane = SubLane.get_lead_vehicle(vehicle.position);
             % 車両の加速度を計算
             vehicle.IDM(lead_vehicle_in_SubLane);
         end

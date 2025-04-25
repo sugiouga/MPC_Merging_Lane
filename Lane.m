@@ -48,7 +48,7 @@ classdef Lane<handle
         end
 
         function lead_vehicle = get_lead_vehicle(obj, position_m)
-            % 車両の最も近い先行車両を取得
+            % 最も近い先行車両を取得
             lead_vehicle = []; % 前方車両の初期化
             min_distance = inf; % 最小距離の初期化
 
@@ -67,7 +67,7 @@ classdef Lane<handle
         end
 
         function follow_vehicle = get_follow_vehicle(obj, position_m)
-            % 車両の最も近い後続車両を取得
+            % 最も近い後続車両を取得
             follow_vehicle = []; % 後続車両の初期化
             min_distance = inf; % 最小距離の初期化
 
