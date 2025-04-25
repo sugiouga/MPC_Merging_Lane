@@ -17,7 +17,7 @@ for Vehicle_ID = 1:30
 end
 
 % サブレーンの車両を追加
-for Vehicle_ID = 1:10
+for Vehicle_ID = 1:20
     % 車両をサブレーンに追加
     SubLane.add_Vehicle(Vehicle(Vehicle_ID + 100, 'CAR'), SubLane.end_position - 300 * Vehicle_ID, 20);
 end
@@ -47,16 +47,8 @@ for step = 1 : 10000 % シミュレーション時間のループ
         % 車両の前方車両を取得
         lead_vehicle = MainLane.get_lead_vehicle(vehicle.Vehicle_ID);
 
-        if vehicle.Vehicle_ID > 100 && vehicle.position < 1200
-            % メインレーンの前方車両を取得
-            lead_vehicle_in_MainLane = MainLane.get_lead_vehicle(vehicle.Vehicle_ID);
-            follow_vehicle_in_MainLane = MainLane.get_follow_vehicle(vehicle.Vehicle_ID);
-            % 車両の加速度を計算
-            vehicle.simpleMPC(lead_vehicle_in_MainLane, follow_vehicle_in_MainLane, SubLane.end_position); % 車両の加速度を計算
-        else
-            % 車両の加速度を計算
-            vehicle.constant_speed();
-        end
+        % 車両の加速度を計算
+        vehicle.IDM(lead_vehicle);
 
         % 車両の状態を更新
         vehicle.update();
@@ -70,22 +62,11 @@ for step = 1 : 10000 % シミュレーション時間のループ
     % サブレーン車両の更新
     sublane_vehicles = values(SubLane.Vehicles);
     for vehicle = sublane_vehicles'
+        % 車両の前方車両を取得
+        lead_vehicle = SubLane.get_lead_vehicle(vehicle.Vehicle_ID);
 
-
-        if vehicle.position > 900
-            % メインレーンに移動する
-            MainLane.add_Vehicle(vehicle, vehicle.position, vehicle.velocity);
-            SubLane.remove_Vehicle(vehicle.Vehicle_ID)
-            % メインレーンの前方車両を取得
-            lead_vehicle_in_MainLane = MainLane.get_lead_vehicle(vehicle.Vehicle_ID);
-            follow_vehicle_in_MainLane = MainLane.get_follow_vehicle(vehicle.Vehicle_ID);
-            % 車両の加速度を計算
-            vehicle.simpleMPC(lead_vehicle_in_MainLane, follow_vehicle_in_MainLane, MainLane.end_position); % 車両の加速度を計算
-        else            % サブレーンの前方車両を取得
-            lead_vehicle_in_SubLane = SubLane.get_lead_vehicle(vehicle.Vehicle_ID);
-            % 車両の加速度を計算
-            vehicle.IDM(lead_vehicle_in_SubLane);
-        end
+        % 車両の加速度を計算
+        vehicle.IDM(lead_vehicle);
 
         % 車両の状態を更新
         vehicle.update();

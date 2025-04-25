@@ -13,6 +13,10 @@ for vehicle = mainlane_vehicles'
     y = 1 + Y_offset; % メインレーンのY座標
     plt(end+1) = plot(x, y, 'sk', 'LineWidth',0.01,  'MarkerSize', 4.5,'MarkerFaceColor', [0 0.4470 0.7410]);
     plt(end+1)=plot(x-3, y, 'sk', 'LineWidth',0.01, 'MarkerSize', 6,'MarkerFaceColor', [0 0.4470 0.7410]);
+    if vehicle.Vehicle_ID > 100
+        plt(end+1) = plot(x, y, 'sk', 'LineWidth',0.01,  'MarkerSize', 4.5,'MarkerFaceColor', [0.8500 0.3250 0.0980]);
+        plt(end+1)=plot(x-3, y, 'sk', 'LineWidth',0.01, 'MarkerSize', 6,'MarkerFaceColor', [0.8500 0.3250 0.0980]);
+    end
 end
 
 % サブレーンの車両をプロット
@@ -25,7 +29,7 @@ for vehicle = sublane_vehicles'
 end
 
 % タイトルと軸の設定
-Msg = sprintf('Simulation time 00:%d:%02d', floor(TIME_STEP * (KK - 1) / 60), mod(floor(TIME_STEP * (KK - 1)), 60));
+Msg = sprintf('Simulation time 00:%d:%02d', floor(TIME_STEP * (step - 1) / 60), mod(floor(TIME_STEP * (step - 1)), 60));
 title(Msg);
 axis([Xminp, Xmaxp, 0.0, 5 + Y_offset]);
 grid on;
