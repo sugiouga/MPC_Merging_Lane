@@ -18,6 +18,8 @@ classdef Vehicle<handle
         acceleration = [] % 現在加速度
         jerk = [] % 現在ジャーク
 
+        status = [] % 車両の状態
+
         Vehicle_Controller = [] % 車両の制御器
         input = [] % 入力は加速度
 
@@ -46,6 +48,7 @@ classdef Vehicle<handle
             obj.velocity = 0; % 現在速度
             obj.acceleration = 0; % 現在加速度
             obj.jerk = 0; % 現在ジャーク
+            obj.status = 'init_status';
 
             obj.input = 0; % 入力は加速度
 
@@ -99,6 +102,11 @@ classdef Vehicle<handle
             obj.REFERENCE_VELOCITY = reference_velocity_m_s;
         end
 
+        function set_status(obj, status)
+            % 車両の状態を設定する
+            obj.status = status;
+        end
+
         function update(obj)
 
             % 車両の加速度入力を制限する
@@ -141,9 +149,6 @@ classdef Vehicle<handle
             if isempty(lead_vehicle)
                 obj.input = (obj.REFERENCE_VELOCITY - obj.velocity) / obj.TIME_STEP; % 目標速度に向かう加速度
             else
-
-                obj.Lead_Vehicle_ID = lead_vehicle.Vehicle_ID; % 前方車両のIDを設定
-
                 % 車間距離と相対速度を計算する
                 distance = lead_vehicle.position - obj.position - lead_vehicle.LENGTH; % 車間距離 (m)
                 relative_velocity = obj.velocity - lead_vehicle.velocity; % 相対速度 (m/s)
