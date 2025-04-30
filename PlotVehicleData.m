@@ -1,7 +1,7 @@
 % resultフォルダ内のすべてのCSVファイルをプロットするスクリプト
 
 % 結果フォルダのパス
-output_folder = '250430_Main5_Sub1';
+output_folder = 'result';
 
 % フォルダ内のすべてのCSVファイルを取得
 csv_files = dir(fullfile(output_folder, 'vehicle_*.csv'));
@@ -11,9 +11,37 @@ vehicle_ids = arrayfun(@(x) str2double(extractBetween(x.name, 'vehicle_', '.csv'
 [~, sorted_indices] = sort(vehicle_ids);
 csv_files = csv_files(sorted_indices); % ソートされた順に並べ替え
 
-% プロットの準備
+% 位置のプロット
 figure;
-tiledlayout(4, 1); % 4つのプロットを縦に並べる
+hold on;
+title('Position vs Time');
+xlabel('Time [s]');
+ylabel('Position [m]');
+grid on;
+
+% 速度のプロット
+figure;
+hold on;
+title('Velocity vs Time');
+xlabel('Time [s]');
+ylabel('Velocity [m/s]');
+grid on;
+
+% 加速度のプロット
+figure;
+hold on;
+title('Acceleration vs Time');
+xlabel('Time [s]');
+ylabel('Acceleration [m/s^2]');
+grid on;
+
+% 先行車両と後続車両の距離のプロット
+figure;
+hold on;
+title('Lead and Follow Distance vs Time');
+xlabel('Time [s]');
+ylabel('Distance [m]');
+grid on;
 
 % 各CSVファイルを読み込んでプロット
 for i = 1:length(csv_files)
@@ -33,34 +61,19 @@ for i = 1:length(csv_files)
     vehicle_id = str2double(extractBetween(csv_files(i).name, 'vehicle_', '.csv'));
 
     % 位置のプロット
-    nexttile(1);
+    figure(1);
     plot(Time, Position, 'DisplayName', ['Vehicle ' num2str(vehicle_id)], 'LineWidth', 2);
-    hold on;
-    title('Position vs Time');
-    xlabel('Time [s]');
-    ylabel('Position [m]');
     legend show;
-    grid on;
 
     % 速度のプロット
-    nexttile(2);
+    figure(2);
     plot(Time, Velocity, 'DisplayName', ['Vehicle ' num2str(vehicle_id)], 'LineWidth', 2);
-    hold on;
-    title('Velocity vs Time');
-    xlabel('Time [s]');
-    ylabel('Velocity [m/s]');
     legend show;
-    grid on;
 
     % 加速度のプロット
-    nexttile(3);
+    figure(3);
     plot(Time, Acceleration, 'DisplayName', ['Vehicle ' num2str(vehicle_id)], 'LineWidth', 2);
-    hold on;
-    title('Acceleration vs Time');
-    xlabel('Time [s]');
-    ylabel('Acceleration [m/s^2]');
     legend show;
-    grid on;
 
     % 自車両を基準とした先行車両と後続車両の距離をプロット (ID >= 100 の場合)
     if vehicle_id >= 100
@@ -69,40 +82,32 @@ for i = 1:length(csv_files)
         FollowDistance = nan(height(data), 1);
 
         for j = 1:height(data)
-            lead_id = data.Lead_Vehicle_ID(j);
-            follow_id = data.Follow_Vehicle_ID(j);
+            lead_vehicle_id = data.Lead_Vehicle_ID(j);
+            follow_vehicle_id = data.Follow_Vehicle_ID(j);
 
             % 先行車両の距離を計算
-            if ~isnan(lead_id) && lead_id > 0
-                lead_file = fullfile(output_folder, sprintf('vehicle_%d.csv', lead_id));
-                if isfile(lead_file)
-                    lead_data = readtable(lead_file);
-                    LeadDistance(j) = lead_data.Position(j) - data.Position(j);
+            if ~isnan(lead_vehicle_id) && lead_vehicle_id > 0
+                lead_vehicle_file = fullfile(output_folder, sprintf('vehicle_%d.csv', lead_vehicle_id));
+                if isfile(lead_vehicle_file)
+                    lead_vehicle_data = readtable(lead_vehicle_file);
+                    LeadDistance(j) = lead_vehicle_data.Position(j) - data.Position(j);
                 end
             end
 
             % 後続車両の距離を計算
-            if ~isnan(follow_id) && follow_id > 0
-                follow_file = fullfile(output_folder, sprintf('vehicle_%d.csv', follow_id));
-                if isfile(follow_file)
-                    follow_data = readtable(follow_file);
-                    FollowDistance(j) = data.Position(j) - follow_data.Position(j);
+            if ~isnan(follow_vehicle_id) && follow_vehicle_id > 0
+                follow_vehicle_file = fullfile(output_folder, sprintf('vehicle_%d.csv', follow_vehicle_id));
+                if isfile(follow_vehicle_file)
+                    follow_vehicle_data = readtable(follow_vehicle_file);
+                    FollowDistance(j) = data.Position(j) - follow_vehicle_data.Position(j);
                 end
             end
         end
 
         % 距離のプロット
-        nexttile(4);
+        figure(4);
         plot(Time, LeadDistance, 'DisplayName', ['Lead Distance (Vehicle ' num2str(vehicle_id) ')'], 'LineWidth', 2);
-        hold on;
         plot(Time, FollowDistance, 'DisplayName', ['Follow Distance (Vehicle ' num2str(vehicle_id) ')'], 'LineWidth', 2, 'LineStyle', '--');
-        title('Lead and Follow Distance vs Time');
-        xlabel('Time [s]');
-        ylabel('Distance [m]');
         legend show;
-        grid on;
     end
 end
-
-% 全体の調整
-sgtitle('Vehicle Data Plots');
