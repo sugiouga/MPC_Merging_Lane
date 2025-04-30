@@ -3,6 +3,8 @@ classdef Vehicle<handle
     properties(GetAccess = 'public', SetAccess = 'private')
         % 車両の基本情報
         Vehicle_ID = [] % 車両のID
+        Lead_Vehicle_ID = [] % 前方車両のID
+        Follow_Vehicle_ID = [] % 後方車両のID
         Lane_ID = [] % 車両が走行している道路のID
         TIME_STEP = [] % 時間刻み
         PREDICTION_HORIZON = [] % 予測ホライズン
@@ -32,6 +34,8 @@ classdef Vehicle<handle
             config; % config.mを読み込む
             % 車両の初期化
             obj.Vehicle_ID = Vehicle_ID;
+            obj.Lead_Vehicle_ID = Vehicle_ID - 1; % 前方車両のID
+            obj.Follow_Vehicle_ID = Vehicle_ID + 1; % 後方車両のID
             obj.Lane_ID = 0;
             obj.Vehicle_TYPE = Vehicle_TYPE;
             obj.TIME_STEP = TIME_STEP;
@@ -63,6 +67,16 @@ classdef Vehicle<handle
             obj.REFERENCE_VELOCITY = obj.MAX_VELOCITY; % 参照速度 (m/s)
             obj.MIN_ACCELERATION = -3; % 車両の最小加速度 (m/s^2)
             obj.MAX_ACCELERATION = 2; % 車両の最大加速度 (m/s^2)
+        end
+
+        function set_Lead_Vehicle_ID(obj, Lead_Vehicle_ID)
+            % 前方車両のIDを設定する
+            obj.Lead_Vehicle_ID = Lead_Vehicle_ID;
+        end
+
+        function set_Follow_Vehicle_ID(obj, Follow_Vehicle_ID)
+            % 後方車両のIDを設定する
+            obj.Follow_Vehicle_ID = Follow_Vehicle_ID;
         end
 
         function set_Lane_ID(obj, Lane_ID)
@@ -127,6 +141,9 @@ classdef Vehicle<handle
             if isempty(lead_vehicle)
                 obj.input = (obj.REFERENCE_VELOCITY - obj.velocity) / obj.TIME_STEP; % 目標速度に向かう加速度
             else
+
+                obj.Lead_Vehicle_ID = lead_vehicle.Vehicle_ID; % 前方車両のIDを設定
+
                 % 車間距離と相対速度を計算する
                 distance = lead_vehicle.position - obj.position - lead_vehicle.LENGTH; % 車間距離 (m)
                 relative_velocity = obj.velocity - lead_vehicle.velocity; % 相対速度 (m/s)
@@ -157,6 +174,9 @@ classdef Vehicle<handle
                 obj.IDM(lead_vehicle); % IDMを使用して加速度を計算
                 return;
             end
+
+            obj.Lead_Vehicle_ID = lead_vehicle.Vehicle_ID; % 前方車両のIDを設定
+            obj.Follow_Vehicle_ID = follow_vehicle.Vehicle_ID; % 後方車両のIDを設定
 
             % 初期解を設定する
             u0 = zeros(obj.PREDICTION_HORIZON, 1);
