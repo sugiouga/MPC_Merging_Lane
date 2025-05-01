@@ -210,8 +210,14 @@ classdef Vehicle<handle
             reference_status = (1-ratio)*lead_vehicle_status + ratio*follow_vehicle_status;
 
             % 評価関数を設定する
-            weight = 1; % 重み
-            fun = @(u) weight * sum((F_matrix*init_ego_vehicle_status + G_matrix*u - reference_status).^2); % 評価関数)
+            alpha = 1; % 入力の重み
+            beta = 1; % 先行車両の速度に追従する重み
+            gamma = 100; % 目標位置に追従する重み
+            delta = 10; % ジャークの重み
+            fun = @(u) alpha * sum(u.^2) + ...
+                        beta * (sum((F_matrix(2:2:end, :) * init_ego_vehicle_status + G_matrix(2:2:end, :) * u - lead_vehicle_status(2:2:end)).^2)) + ...
+                        gamma * (sum((F_matrix(1:2:end-1, :) * init_ego_vehicle_status + G_matrix(1:2:end-1, :) * u - reference_status(1:2:end-1)).^2)) + ...
+                        delta * sum((diff(u) / obj.TIME_STEP).^2); % 評価関数
 
             % 最適化問題を解く
             u = fmincon(fun, u0, A, b, [], [], lb, ub);
