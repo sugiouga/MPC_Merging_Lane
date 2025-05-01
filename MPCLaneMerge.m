@@ -68,10 +68,10 @@ for step = 1 : 600
         save_vehicle_state_to_csv(vehicle, time, output_folder);
 
         % if vehicle.Vehicle_ID > 100 && vehicle.position < 1200
-        if vehicle.Vehicle_ID > 100
+        if vehicle.Vehicle_ID > 100 && vehicle.position < 1600
             lead_vehicle_in_MainLane = MainLane.get_lead_vehicle(vehicle.position);
             follow_vehicle_in_MainLane = MainLane.get_follow_vehicle(vehicle.position);
-            vehicle.MPC(lead_vehicle_in_MainLane, follow_vehicle_in_MainLane, SubLane.end_position);
+            vehicle.MPC(lead_vehicle_in_MainLane, follow_vehicle_in_MainLane);
         else
             lead_vehicle_in_MainLane = MainLane.get_lead_vehicle(vehicle.position);
             vehicle.constant_speed();
@@ -93,7 +93,7 @@ for step = 1 : 600
         if vehicle.position > 800
             lead_vehicle_in_MainLane = MainLane.get_lead_vehicle(vehicle.position);
             follow_vehicle_in_MainLane = MainLane.get_follow_vehicle(vehicle.position);
-            vehicle.MPC(lead_vehicle_in_MainLane, follow_vehicle_in_MainLane, MainLane.end_position);
+            vehicle.MPC(lead_vehicle_in_MainLane, follow_vehicle_in_MainLane);
         else
             lead_vehicle_in_SubLane = SubLane.get_lead_vehicle(vehicle.position);
             vehicle.IDM(lead_vehicle_in_SubLane);

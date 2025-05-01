@@ -45,6 +45,14 @@ xlabel('Time [s]');
 ylabel('Distance [m]');
 grid on;
 
+% ジャークのプロット
+figure(5);
+hold on;
+title('Jerk');
+xlabel('Time [s]');
+ylabel('Jerk [m/s^3]');
+grid on;
+
 % 各CSVファイルを読み込んでプロット
 for i = 1:length(csv_files)
     % ファイル名を取得
@@ -58,6 +66,7 @@ for i = 1:length(csv_files)
     Position = data.Position;
     Velocity = data.Velocity;
     Acceleration = data.Acceleration;
+    Jerk = data.Jerk;
 
     % ビークルIDを取得
     vehicle_id = str2double(extractBetween(csv_files(i).name, 'vehicle_', '.csv'));
@@ -78,6 +87,12 @@ for i = 1:length(csv_files)
     figure(3);
     plot(Time, Acceleration, 'DisplayName', ['Vehicle ' num2str(vehicle_id)], 'LineWidth', 2);
     ylim([-4 3]); % y軸の範囲を-3から2に設定
+    legend show;
+
+    % ジャークのプロット
+    figure(5);
+    plot(Time, Jerk, 'DisplayName', ['Vehicle ' num2str(vehicle_id)], 'LineWidth', 2);
+    ylim([-5 5]); % y軸の範囲を-5から5に設定
     legend show;
 
     % 自車両を基準とした先行車両と後続車両の距離をプロット (ID >= 100 の場合)
@@ -120,4 +135,5 @@ for i = 1:length(csv_files)
     saveas(figure(2), fullfile(output_folder, 'Velocity.png'));
     saveas(figure(3), fullfile(output_folder, 'Acceleration.png'));
     saveas(figure(4), fullfile(output_folder, 'Distance.png'));
+    saveas(figure(5), fullfile(output_folder, 'Jerk.png'));
 end

@@ -24,6 +24,7 @@ classdef Vehicle<handle
         input = [] % 入力は加速度
 
         REFERENCE_VELOCITY = [] % 参照速度 (m/s)
+        MIN_DISTANCE = [] % 車両の最小車間距離 (m)
         MIN_VELOCITY = [] % 車両の最小速度
         MAX_VELOCITY = [] % 車両の最大速度
         MIN_ACCELERATION = [] % 車両の最小加速度
@@ -65,6 +66,7 @@ classdef Vehicle<handle
             end
 
             % 車両の速度と加速度を設定
+            obj.MIN_DISTANCE = 1.5; % 車両の最小車間距離 (m)
             obj.MIN_VELOCITY = 0; % 車両の最小速度 (m/s)
             obj.MAX_VELOCITY = 30; % 車両の最大速度 (m/s)
             obj.REFERENCE_VELOCITY = obj.MAX_VELOCITY; % 参照速度 (m/s)
@@ -117,7 +119,7 @@ classdef Vehicle<handle
             end
 
             % ジャークを計算する
-            obj.jerk = (obj.acceleration - obj.input) / obj.TIME_STEP;
+            obj.jerk = (obj.input - obj.acceleration) / obj.TIME_STEP;
 
             % 加速度入力を受け取る
             obj.acceleration = obj.input;
@@ -154,7 +156,7 @@ classdef Vehicle<handle
                 relative_velocity = obj.velocity - lead_vehicle.velocity; % 相対速度 (m/s)
 
                 % IDMの式を使用して加速度を計算する
-                min_distance = 1.5; % 最小車間距離 (m)
+                min_distance = obj.MIN_DISTANCE; % 最小車間距離 (m)
                 desired_time_headway = 1.3; % 目標時間間隔 (s)
                 max_acceleration = obj.MAX_ACCELERATION; % 最大加速度 (m/s^2)
                 comfortable_deceleration = 2.5; % 快適減速度 (m/s^2)
@@ -168,7 +170,7 @@ classdef Vehicle<handle
             end
         end
 
-        function MPC(obj, lead_vehicle, follow_vehicle, end_position)
+        function MPC(obj, lead_vehicle, follow_vehicle)
             % MPCを使用して車両の加速度を計算する
             % 状態は[位置, 速度]
             % 入力は加速度
@@ -200,8 +202,8 @@ classdef Vehicle<handle
             G_matrix = get_G_matrix(obj.PREDICTION_HORIZON, obj.TIME_STEP); % G行列を取得
             A = [G_matrix; -G_matrix];
             b = [-F_matrix*init_ego_vehicle_status; F_matrix*init_ego_vehicle_status]; % 不等式制約
-            b(1:2:2*obj.PREDICTION_HORIZON-1) = b(1:2:2*obj.PREDICTION_HORIZON-1) + lead_vehicle_status(1:2:end-1);
-            b(2*obj.PREDICTION_HORIZON+1:2:end-1) = b(2*obj.PREDICTION_HORIZON+1:2:end-1) - follow_vehicle_status(1:2:end-1);
+            b(1:2:2*obj.PREDICTION_HORIZON-1) = b(1:2:2*obj.PREDICTION_HORIZON-1) + lead_vehicle_status(1:2:end-1) - obj.MIN_DISTANCE; % 車間距離の制約
+            b(2*obj.PREDICTION_HORIZON+1:2:end-1) = b(2*obj.PREDICTION_HORIZON+1:2:end-1) - follow_vehicle_status(1:2:end-1) + obj.MIN_DISTANCE; % 車間距離の制約
             b(2:2:2*obj.PREDICTION_HORIZON) = b(2:2:2*obj.PREDICTION_HORIZON) + repmat(obj.MAX_VELOCITY, obj.PREDICTION_HORIZON, 1);
             b(2*obj.PREDICTION_HORIZON+2:2:end) = b(2*obj.PREDICTION_HORIZON+2:2:end) - repmat(obj.MIN_VELOCITY, obj.PREDICTION_HORIZON, 1);
 
@@ -212,8 +214,8 @@ classdef Vehicle<handle
             % 評価関数を設定する
             alpha = 1; % 入力の重み
             beta = 1; % 先行車両の速度に追従する重み
-            gamma = 100; % 目標位置に追従する重み
-            delta = 10; % ジャークの重み
+            gamma = 1; % 目標位置に追従する重み
+            delta = 100; % ジャークの重み
             fun = @(u) alpha * sum(u.^2) + ...
                         beta * (sum((F_matrix(2:2:end, :) * init_ego_vehicle_status + G_matrix(2:2:end, :) * u - lead_vehicle_status(2:2:end)).^2)) + ...
                         gamma * (sum((F_matrix(1:2:end-1, :) * init_ego_vehicle_status + G_matrix(1:2:end-1, :) * u - reference_status(1:2:end-1)).^2)) + ...
