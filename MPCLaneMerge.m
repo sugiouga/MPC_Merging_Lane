@@ -6,11 +6,9 @@ LaneMerge = Map('MPCLaneMerge'); % 地図の初期化
 
 MainLane = Lane('MainLane', 0, 1600, 25); % メインレーンの初期化
 SubLane = Lane('SubLane', 0, 1000, 20); % サブレーンの初期化
-TerminalLane = Lane('TerminalLane', 1600, 10000, 25); % ターミナルレーンの初期化
 
 LaneMerge.add_Lane(MainLane); % メインレーンの追加
 LaneMerge.add_Lane(SubLane); % サブレーンの追加
-LaneMerge.add_Lane(TerminalLane); % ターミナルレーンの追加
 
 % メインレーンの車両を追加
 for Vehicle_ID = 1:5
@@ -45,7 +43,7 @@ end
 mkdir(output_folder); % 新しいフォルダを作成
 
 % シミュレーション時間のループ
-for step = 1 : 10000
+for step = 1 : 600
     if(mod(step, 4)==1)
         delete(plt);
         TrafficPlot;
@@ -59,7 +57,8 @@ for step = 1 : 10000
         % ビークルの状態をCSVに保存
         save_vehicle_state_to_csv(vehicle, time, output_folder);
 
-        if vehicle.Vehicle_ID > 100 && vehicle.position < 1000
+        % if vehicle.Vehicle_ID > 100 && vehicle.position < 1200
+        if vehicle.Vehicle_ID > 100
             lead_vehicle_in_MainLane = MainLane.get_lead_vehicle(vehicle.position);
             follow_vehicle_in_MainLane = MainLane.get_follow_vehicle(vehicle.position);
             vehicle.MPC(lead_vehicle_in_MainLane, follow_vehicle_in_MainLane, SubLane.end_position);
@@ -70,10 +69,9 @@ for step = 1 : 10000
 
         vehicle.update();
 
-        if vehicle.position > MainLane.end_position
-            MainLane.remove_Vehicle(vehicle.Vehicle_ID);
-            TerminalLane.add_Vehicle(vehicle, vehicle.position, vehicle.velocity);
-        end
+        % if vehicle.position > MainLane.end_position
+        %     MainLane.remove_Vehicle(vehicle.Vehicle_ID);
+        % end
     end
 
     % サブレーン車両の更新
@@ -82,7 +80,7 @@ for step = 1 : 10000
         % ビークルの状態をCSVに保存
         save_vehicle_state_to_csv(vehicle, time, output_folder);
 
-        if vehicle.position > 600
+        if vehicle.position > 800
             lead_vehicle_in_MainLane = MainLane.get_lead_vehicle(vehicle.position);
             follow_vehicle_in_MainLane = MainLane.get_follow_vehicle(vehicle.position);
             vehicle.MPC(lead_vehicle_in_MainLane, follow_vehicle_in_MainLane, MainLane.end_position);
@@ -97,15 +95,6 @@ for step = 1 : 10000
             MainLane.add_Vehicle(vehicle, vehicle.position, vehicle.velocity);
             SubLane.remove_Vehicle(vehicle.Vehicle_ID);
         end
-    end
-
-    % 終端レーン車両の更新
-    terminallane_vehicles = values(TerminalLane.Vehicles);
-    for vehicle = terminallane_vehicles'
-        % ビークルの状態をCSVに保存
-        save_vehicle_state_to_csv(vehicle, time, output_folder);
-
-        vehicle.update();
     end
 
     if isempty(mainlane_vehicles) && isempty(sublane_vehicles)
