@@ -1,1 +1,1 @@
-# Matlab_Platooning_Merging-_Lane
+# Matlab_Platooning_Merging_Lane
