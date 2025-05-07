@@ -2,14 +2,14 @@ classdef Vehicle<handle
     % Vehicle 車両の基本クラス
     properties(GetAccess = 'public', SetAccess = 'private')
         % 車両の基本情報
-        Vehicle_ID = [] % 車両のID
-        Lead_Vehicle_ID = [] % 前方車両のID
-        Follow_Vehicle_ID = [] % 後方車両のID
-        Lane_ID = [] % 車両が走行している道路のID
+        VEHICLE_ID = [] % 車両のID
+        Lead_VEHICLE_ID = [] % 前方車両のID
+        Follow_VEHICLE_ID = [] % 後方車両のID
+        LANE_ID = [] % 車両が走行している道路のID
         TIME_STEP = [] % 時間刻み
         PREDICTION_HORIZON = [] % 予測ホライズン
 
-        Vehicle_TYPE = [] % 車両の種類
+        VEHICLE_TYPE = [] % 車両の種類
         LENGTH = [] % 車両の長さ
         WIDTH = [] % 車両の幅
 
@@ -20,7 +20,6 @@ classdef Vehicle<handle
 
         status = [] % 車両の状態
 
-        Vehicle_Controller = [] % 車両の制御器
         input = [] % 入力は加速度
 
         REFERENCE_VELOCITY = [] % 参照速度 (m/s)
@@ -33,14 +32,14 @@ classdef Vehicle<handle
 
     methods
 
-        function obj = Vehicle(Vehicle_ID, Vehicle_TYPE)
+        function obj = Vehicle(VEHICLE_ID, VEHICLE_TYPE)
             config; % config.mを読み込む
             % 車両の初期化
-            obj.Vehicle_ID = Vehicle_ID;
-            obj.Lead_Vehicle_ID = Vehicle_ID - 1; % 前方車両のID
-            obj.Follow_Vehicle_ID = Vehicle_ID + 1; % 後方車両のID
-            obj.Lane_ID = 0;
-            obj.Vehicle_TYPE = Vehicle_TYPE;
+            obj.VEHICLE_ID = VEHICLE_ID;
+            obj.Lead_VEHICLE_ID = VEHICLE_ID - 1; % 前方車両のID
+            obj.Follow_VEHICLE_ID = VEHICLE_ID + 1; % 後方車両のID
+            obj.LANE_ID = 0;
+            obj.VEHICLE_TYPE = VEHICLE_TYPE;
             obj.TIME_STEP = TIME_STEP;
             obj.PREDICTION_HORIZON = PREDICTION_HORIZON;
 
@@ -54,7 +53,7 @@ classdef Vehicle<handle
             obj.input = 0; % 入力は加速度
 
             % 車両の長さと幅を設定
-            switch Vehicle_TYPE
+            switch VEHICLE_TYPE
                 case 'CAR'
                     obj.LENGTH = 5.25; % 車両の長さ
                     obj.WIDTH = 1.69; % 車両の幅
@@ -74,19 +73,19 @@ classdef Vehicle<handle
             obj.MAX_ACCELERATION = 2; % 車両の最大加速度 (m/s^2)
         end
 
-        function set_Lead_Vehicle_ID(obj, Lead_Vehicle_ID)
+        function set_Lead_VEHICLE_ID(obj, Lead_VEHICLE_ID)
             % 前方車両のIDを設定する
-            obj.Lead_Vehicle_ID = Lead_Vehicle_ID;
+            obj.Lead_VEHICLE_ID = Lead_VEHICLE_ID;
         end
 
-        function set_Follow_Vehicle_ID(obj, Follow_Vehicle_ID)
+        function set_Follow_VEHICLE_ID(obj, Follow_VEHICLE_ID)
             % 後方車両のIDを設定する
-            obj.Follow_Vehicle_ID = Follow_Vehicle_ID;
+            obj.Follow_VEHICLE_ID = Follow_VEHICLE_ID;
         end
 
-        function set_Lane_ID(obj, Lane_ID)
+        function set_LANE_ID(obj, LANE_ID)
             % 車両の走行している道路を設定する
-            obj.Lane_ID = Lane_ID;
+            obj.LANE_ID = LANE_ID;
         end
 
         function set_init_position(obj, init_position_m)
@@ -136,15 +135,15 @@ classdef Vehicle<handle
             end
         end
 
-        function constant_speed(obj)
-            if obj.velocity == obj.REFERENCE_VELOCITY
+        function constant_speed(obj, velocity_m_s)
+            if obj.velocity == velocity_m_s
                 obj.input = 0; % 車両の加速度を0に設定
             else
-                obj.input = (obj.REFERENCE_VELOCITY - obj.velocity) / obj.TIME_STEP; % 目標速度に向かう加速度
+                obj.input = (velocity_m_s - obj.velocity) / obj.TIME_STEP; % 目標速度に向かう加速度
             end
         end
 
-        function IDM(obj, lead_vehicle)
+        function idm(obj, lead_vehicle)
             % Intelligent Driver Model (IDM)を使用して車両の加速度を計算する
             % lead_vehicle: 前方車両のオブジェクト
             % 車両の加速度を計算する
@@ -170,7 +169,7 @@ classdef Vehicle<handle
             end
         end
 
-        function MPC(obj, lead_vehicle, follow_vehicle, ratio)
+        function mpc(obj, lead_vehicle, follow_vehicle, ratio)
             % MPCを使用して車両の加速度を計算する
             % 状態は[位置, 速度]
             % 入力は加速度
@@ -178,12 +177,12 @@ classdef Vehicle<handle
             % x=[x(N),...,x(k+1),x(k),...,x(0)]'
 
             if isempty(follow_vehicle)
-                obj.IDM(lead_vehicle); % IDMを使用して加速度を計算
+                obj.idm(lead_vehicle); % IDMを使用して加速度を計算
                 return;
             end
 
-            obj.Lead_Vehicle_ID = lead_vehicle.Vehicle_ID; % 前方車両のIDを設定
-            obj.Follow_Vehicle_ID = follow_vehicle.Vehicle_ID; % 後方車両のIDを設定
+            obj.Lead_VEHICLE_ID = lead_vehicle.VEHICLE_ID; % 前方車両のIDを設定
+            obj.Follow_VEHICLE_ID = follow_vehicle.VEHICLE_ID; % 後方車両のIDを設定
 
             % 初期解を設定する
             u0 = zeros(obj.PREDICTION_HORIZON, 1);

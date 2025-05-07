@@ -1,27 +1,27 @@
 classdef Lane<handle
     % Lane 車両の走行道路を表すクラス
     properties(GetAccess = 'public', SetAccess = 'private')
-        Lane_ID = [] % 道路のID
+        LANE_ID = [] % 道路のID
         WIDTH = [] % 道路の幅
         REFERENCE_VELOCITY = [] % 参照速度 (m/s)
 
-        start_position = [] % 道路の開始位置 (m)
-        end_position = [] % 道路の終了位置 (m)
+        START_POSITION = [] % 道路の開始位置 (m)
+        END_POSITION = [] % 道路の終了位置 (m)
 
         Vehicles = [] % 道路上の車両リスト
     end
 
     methods
 
-        function obj = Lane(Lane_ID, start_position_m, end_position_m, REFERENCE_VELOCITY_m_s)
+        function obj = Lane(LANE_ID, START_POSITION_m, END_POSITION_m, REFERENCE_VELOCITY_m_s)
             % 道路の初期化
-            obj.Lane_ID = Lane_ID;
+            obj.LANE_ID = LANE_ID;
             obj.WIDTH = 3.5; % 道路の幅 (m)
             obj.REFERENCE_VELOCITY = REFERENCE_VELOCITY_m_s; % 参照速度 (m/s)
 
             % 道路の開始位置と終了位置を設定
-            obj.start_position = start_position_m; % 開始位置 (m)
-            obj.end_position = end_position_m; % 終了位置 (m)
+            obj.START_POSITION = START_POSITION_m; % 開始位置 (m)
+            obj.END_POSITION = END_POSITION_m; % 終了位置 (m)
 
             % 車両リストを初期化
             obj.Vehicles = dictionary; % 道路上の車両リスト
@@ -29,20 +29,20 @@ classdef Lane<handle
 
         function add_Vehicle(obj, Vehicle, init_position_m, init_velocity_m_s)
             % 車両の初期位置と速度を設定
-            Vehicle.set_Lane_ID(obj.Lane_ID); % メソッドを呼び出してレーンIDを設定
+            Vehicle.set_LANE_ID(obj.LANE_ID); % メソッドを呼び出してレーンIDを設定
             Vehicle.set_init_position(init_position_m); % メソッドを呼び出して初期位置を設定
             Vehicle.set_init_velocity(init_velocity_m_s); % メソッドを呼び出して初期速度を設定
             Vehicle.set_reference_velocity(obj.REFERENCE_VELOCITY); % メソッドを呼び出して参照速度を設定
-            Vehicle.set_status('In Lane(' + string(obj.Lane_ID) + ')'); % メソッドを呼び出して初期状態を設定
+            Vehicle.set_status('In Lane(' + string(obj.LANE_ID) + ')'); % メソッドを呼び出して初期状態を設定
 
             % 車両を道路に追加
-            obj.Vehicles(Vehicle.Vehicle_ID) = Vehicle;
+            obj.Vehicles(Vehicle.VEHICLE_ID) = Vehicle;
         end
 
-        function remove_Vehicle(obj, Vehicle_ID)
+        function remove_Vehicle(obj, VEHICLE_ID)
             % 車両を道路から削除
-            if isKey(obj.Vehicles, Vehicle_ID)
-                obj.Vehicles = remove(obj.Vehicles, Vehicle_ID);
+            if isKey(obj.Vehicles, VEHICLE_ID)
+                obj.Vehicles = remove(obj.Vehicles, VEHICLE_ID);
             else
                 error('Vehicle ID not found in the lane!');
             end
