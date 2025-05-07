@@ -170,7 +170,7 @@ classdef Vehicle<handle
             end
         end
 
-        function MPC(obj, lead_vehicle, follow_vehicle)
+        function MPC(obj, lead_vehicle, follow_vehicle, ratio)
             % MPCを使用して車両の加速度を計算する
             % 状態は[位置, 速度]
             % 入力は加速度
@@ -208,7 +208,6 @@ classdef Vehicle<handle
             b(2*obj.PREDICTION_HORIZON+2:2:end) = b(2*obj.PREDICTION_HORIZON+2:2:end) - repmat(obj.MIN_VELOCITY, obj.PREDICTION_HORIZON, 1);
 
             % エゴ車両の目標状態を設定する
-            ratio = 0.3;
             reference_status = (1-ratio)*lead_vehicle_status + ratio*follow_vehicle_status;
 
             % 評価関数を設定する

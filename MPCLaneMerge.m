@@ -93,7 +93,7 @@ for step = 1 : 600
         if vehicle.position > 800
             lead_vehicle_in_MainLane = MainLane.get_lead_vehicle(vehicle.position);
             follow_vehicle_in_MainLane = MainLane.get_follow_vehicle(vehicle.position);
-            vehicle.MPC(lead_vehicle_in_MainLane, follow_vehicle_in_MainLane);
+            vehicle.MPC(lead_vehicle_in_MainLane, follow_vehicle_in_MainLane, 0.3);
         else
             lead_vehicle_in_SubLane = SubLane.get_lead_vehicle(vehicle.position);
             vehicle.IDM(lead_vehicle_in_SubLane);
@@ -102,7 +102,7 @@ for step = 1 : 600
         vehicle.update();
 
         if vehicle.position > 900
-            MainLane.add_Vehicle(vehicle, vehicle.position, vehicle.velocity);
+            MainLane.add_Vehicle(vehicle, vehicle.position, vehicle.velocity, 0.3);
             SubLane.remove_Vehicle(vehicle.Vehicle_ID);
         end
     end
