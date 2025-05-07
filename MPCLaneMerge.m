@@ -11,7 +11,7 @@ LaneMerge.add_Lane(MainLane); % メインレーンの追加
 LaneMerge.add_Lane(SubLane); % サブレーンの追加
 
 % メインレーンの車両を追加
-for VEHICLE_ID = 1:5
+for VEHICLE_ID = 1:6
     % 車両をメインレーンに追加
     MainLane.add_Vehicle(Vehicle(VEHICLE_ID, 'CAR'), 800 - 150 * VEHICLE_ID, 25);
 end
