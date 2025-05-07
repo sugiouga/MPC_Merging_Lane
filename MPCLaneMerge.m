@@ -11,15 +11,15 @@ LaneMerge.add_Lane(MainLane); % メインレーンの追加
 LaneMerge.add_Lane(SubLane); % サブレーンの追加
 
 % メインレーンの車両を追加
-for Vehicle_ID = 1:5
+for VEHICLE_ID = 1:5
     % 車両をメインレーンに追加
-    MainLane.add_Vehicle(Vehicle(Vehicle_ID, 'CAR'), 800 - 150 * Vehicle_ID, 25);
+    MainLane.add_Vehicle(Vehicle(VEHICLE_ID, 'CAR'), 800 - 150 * VEHICLE_ID, 25);
 end
 
 % サブレーンの車両を追加
-for Vehicle_ID = 1:1
+for VEHICLE_ID = 1:1
     % 車両をサブレーンに追加
-    SubLane.add_Vehicle(Vehicle(Vehicle_ID + 100, 'CAR'), 600 -100 * Vehicle_ID, 20);
+    SubLane.add_Vehicle(Vehicle(VEHICLE_ID + 100, 'CAR'), 600 -100 * VEHICLE_ID, 20);
 end
 
 hFig=figure; set(hFig, 'position', [20,300,1000,200]);
@@ -67,20 +67,20 @@ for step = 1 : 600
         % ビークルの状態をCSVに保存
         save_vehicle_state_to_csv(vehicle, time, output_folder);
 
-        % if vehicle.Vehicle_ID > 100 && vehicle.position < 1200
-        if vehicle.Vehicle_ID > 100 && vehicle.position < 1600
+        % if vehicle.VEHICLE_ID > 100 && vehicle.position < 1200
+        if vehicle.VEHICLE_ID > 100 && vehicle.position < 1600
             lead_vehicle_in_MainLane = MainLane.get_lead_vehicle(vehicle.position);
             follow_vehicle_in_MainLane = MainLane.get_follow_vehicle(vehicle.position);
-            vehicle.MPC(lead_vehicle_in_MainLane, follow_vehicle_in_MainLane);
+            vehicle.mpc(lead_vehicle_in_MainLane, follow_vehicle_in_MainLane, 0.3);
         else
             lead_vehicle_in_MainLane = MainLane.get_lead_vehicle(vehicle.position);
-            vehicle.constant_speed();
+            vehicle.constant_speed(vehicle.REFERENCE_VELOCITY);
         end
 
         vehicle.update();
 
         % if vehicle.position > MainLane.end_position
-        %     MainLane.remove_Vehicle(vehicle.Vehicle_ID);
+        %     MainLane.remove_Vehicle(vehicle.VEHICLE_ID);
         % end
     end
 
@@ -93,17 +93,17 @@ for step = 1 : 600
         if vehicle.position > 800
             lead_vehicle_in_MainLane = MainLane.get_lead_vehicle(vehicle.position);
             follow_vehicle_in_MainLane = MainLane.get_follow_vehicle(vehicle.position);
-            vehicle.MPC(lead_vehicle_in_MainLane, follow_vehicle_in_MainLane);
+            vehicle.mpc(lead_vehicle_in_MainLane, follow_vehicle_in_MainLane, 0.3);
         else
             lead_vehicle_in_SubLane = SubLane.get_lead_vehicle(vehicle.position);
-            vehicle.IDM(lead_vehicle_in_SubLane);
+            vehicle.idm(lead_vehicle_in_SubLane);
         end
 
         vehicle.update();
 
         if vehicle.position > 900
             MainLane.add_Vehicle(vehicle, vehicle.position, vehicle.velocity);
-            SubLane.remove_Vehicle(vehicle.Vehicle_ID);
+            SubLane.remove_Vehicle(vehicle.VEHICLE_ID);
         end
     end
 
@@ -120,10 +120,10 @@ close all;
 
 function save_vehicle_state_to_csv(Vehicle, time, output_folder)
     % ビークルの状態をCSVファイルに保存する
-    filename = fullfile(output_folder, sprintf('vehicle_%d.csv', Vehicle.Vehicle_ID));
+    filename = fullfile(output_folder, sprintf('vehicle_%d.csv', Vehicle.VEHICLE_ID));
 
     % ビークルの状態を取得
-    data = [time, Vehicle.position, Vehicle.velocity, Vehicle.acceleration, Vehicle.jerk, Vehicle.Follow_Vehicle_ID, Vehicle.Lead_Vehicle_ID, Vehicle.status];
+    data = [time, Vehicle.position, Vehicle.velocity, Vehicle.acceleration, Vehicle.jerk, Vehicle.Follow_VEHICLE_ID, Vehicle.Lead_VEHICLE_ID, Vehicle.status];
 
     % ヘッダーを追加 (ファイルが存在しない場合のみ)
     if ~isfile(filename)
