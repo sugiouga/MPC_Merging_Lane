@@ -33,7 +33,6 @@ classdef Lane<handle
             Vehicle.set_init_position(init_position_m); % メソッドを呼び出して初期位置を設定
             Vehicle.set_init_velocity(init_velocity_m_s); % メソッドを呼び出して初期速度を設定
             Vehicle.set_reference_velocity(obj.REFERENCE_VELOCITY); % メソッドを呼び出して参照速度を設定
-            Vehicle.set_status('In Lane(' + string(obj.LANE_ID) + ')'); % メソッドを呼び出して初期状態を設定
 
             % 車両を道路に追加
             obj.Vehicles(Vehicle.VEHICLE_ID) = Vehicle;
