@@ -18,12 +18,13 @@ classdef Vehicle<handle
         acceleration = [] % 現在加速度
         jerk = [] % 現在ジャーク
 
-        status = [] % 車両の状態
-
         input = [] % 入力は加速度
 
         REFERENCE_VELOCITY = [] % 参照速度 (m/s)
         MIN_DISTANCE = [] % 車両の最小車間距離 (m)
+        DESIRED_TIME_HEADWAY = [] % 車両の目標時間間隔 (s)
+        COMFORTABLE_DECELERATION = [] % 快適減速度 (m/s^2)
+
         MIN_VELOCITY = [] % 車両の最小速度
         MAX_VELOCITY = [] % 車両の最大速度
         MIN_ACCELERATION = [] % 車両の最小加速度
@@ -36,8 +37,6 @@ classdef Vehicle<handle
             config; % config.mを読み込む
             % 車両の初期化
             obj.VEHICLE_ID = VEHICLE_ID;
-            obj.Lead_VEHICLE_ID = VEHICLE_ID - 1; % 前方車両のID
-            obj.Follow_VEHICLE_ID = VEHICLE_ID + 1; % 後方車両のID
             obj.LANE_ID = 0;
             obj.VEHICLE_TYPE = VEHICLE_TYPE;
             obj.TIME_STEP = TIME_STEP;
@@ -48,7 +47,6 @@ classdef Vehicle<handle
             obj.velocity = 0; % 現在速度
             obj.acceleration = 0; % 現在加速度
             obj.jerk = 0; % 現在ジャーク
-            obj.status = 'init_status';
 
             obj.input = 0; % 入力は加速度
 
@@ -66,6 +64,8 @@ classdef Vehicle<handle
 
             % 車両の速度と加速度を設定
             obj.MIN_DISTANCE = 1.5; % 車両の最小車間距離 (m)
+            obj.DESIRED_TIME_HEADWAY = 1.3; % 車両の目標時間間隔 (s)
+            obj.COMFORTABLE_DECELERATION = 2.5; % 快適減速度 (m/s^2)
             obj.MIN_VELOCITY = 0; % 車両の最小速度 (m/s)
             obj.MAX_VELOCITY = 30; % 車両の最大速度 (m/s)
             obj.REFERENCE_VELOCITY = obj.MAX_VELOCITY; % 参照速度 (m/s)
@@ -103,11 +103,6 @@ classdef Vehicle<handle
             obj.REFERENCE_VELOCITY = reference_velocity_m_s;
         end
 
-        function set_status(obj, status)
-            % 車両の状態を設定する
-            obj.status = status;
-        end
-
         function update(obj)
 
             % 車両の加速度入力を制限する
@@ -127,7 +122,7 @@ classdef Vehicle<handle
             obj.position = obj.position + obj.velocity * obj.TIME_STEP + 0.5 * obj.acceleration * (obj.TIME_STEP ^ 2);
             obj.velocity = obj.velocity + obj.acceleration * obj.TIME_STEP;
 
-            % 車両の位置･速度を制限する
+            % 車両の速度を制限する
             if obj.velocity < obj.MIN_VELOCITY
                 obj.velocity = obj.MIN_VELOCITY;
             elseif obj.velocity > obj.MAX_VELOCITY
@@ -150,15 +145,16 @@ classdef Vehicle<handle
             if isempty(lead_vehicle)
                 obj.input = (obj.REFERENCE_VELOCITY - obj.velocity) / obj.TIME_STEP; % 目標速度に向かう加速度
             else
+                obj.Lead_VEHICLE_ID = lead_vehicle.VEHICLE_ID;
                 % 車間距離と相対速度を計算する
                 distance = lead_vehicle.position - obj.position - lead_vehicle.LENGTH; % 車間距離 (m)
                 relative_velocity = obj.velocity - lead_vehicle.velocity; % 相対速度 (m/s)
 
                 % IDMの式を使用して加速度を計算する
                 min_distance = obj.MIN_DISTANCE; % 最小車間距離 (m)
-                desired_time_headway = 1.3; % 目標時間間隔 (s)
+                desired_time_headway = obj.DESIRED_TIME_HEADWAY; % 目標時間間隔 (s)
                 max_acceleration = obj.MAX_ACCELERATION; % 最大加速度 (m/s^2)
-                comfortable_deceleration = 2.5; % 快適減速度 (m/s^2)
+                comfortable_deceleration = obj.COMFORTABLE_DECELERATION; % 快適減速度 (m/s^2)
 
                 % 車間距離の目標値 (m)
                 s_star = min_distance + obj.velocity * desired_time_headway + ...
@@ -213,7 +209,7 @@ classdef Vehicle<handle
             alpha = 1; % 入力の重み
             beta = 1; % 先行車両の速度に追従する重み
             gamma = 1; % 目標位置に追従する重み
-            delta = 100; % ジャークの重み
+            delta = 0; % ジャークの重み
             fun = @(u) alpha * sum(u.^2) + ...
                         beta * (sum((F_matrix(2:2:end, :) * init_ego_vehicle_status + G_matrix(2:2:end, :) * u - lead_vehicle_status(2:2:end)).^2)) + ...
                         gamma * (sum((F_matrix(1:2:end-1, :) * init_ego_vehicle_status + G_matrix(1:2:end-1, :) * u - reference_status(1:2:end-1)).^2)) + ...
