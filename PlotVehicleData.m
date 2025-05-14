@@ -1,6 +1,4 @@
 % resultフォルダ内のすべてのCSVファイルをプロットするスクリプト
-clear
-close all
 
 % 結果フォルダのパス
 output_folder = 'result';
@@ -23,6 +21,7 @@ hold on;
 title('Position');
 xlabel('Time [s]');
 ylabel('Position [m]');
+
 legend('show', 'Interpreter', 'none', 'Location', 'southeast'); % 右下に表示
 ylim([0 500]); % Y軸の範囲を設定
 grid on;
