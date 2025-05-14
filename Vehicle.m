@@ -3,8 +3,6 @@ classdef Vehicle<handle
     properties(GetAccess = 'public', SetAccess = 'private')
         % 車両の基本情報
         VEHICLE_ID = [] % 車両のID
-        Lead_VEHICLE_ID = [] % 前方車両のID
-        Follow_VEHICLE_ID = [] % 後方車両のID
         LANE_ID = [] % 車両が走行している道路のID
         TIME_STEP = [] % 時間刻み
         PREDICTION_HORIZON = [] % 予測ホライズン
@@ -20,7 +18,9 @@ classdef Vehicle<handle
 
         input = [] % 入力は加速度
 
+        REFERENCE_POSITION = [] % 参照位置 (m)
         REFERENCE_VELOCITY = [] % 参照速度 (m/s)
+
         MIN_DISTANCE = [] % 車両の最小車間距離 (m)
         DESIRED_TIME_HEADWAY = [] % 車両の目標時間間隔 (s)
         COMFORTABLE_DECELERATION = [] % 快適減速度 (m/s^2)
@@ -63,12 +63,15 @@ classdef Vehicle<handle
             end
 
             % 車両の速度と加速度を設定
+            obj.REFERENCE_POSITION = 0; % 参照位置 (m)
+            obj.REFERENCE_VELOCITY = obj.MAX_VELOCITY; % 参照速度 (m/s)
+
             obj.MIN_DISTANCE = 1.5; % 車両の最小車間距離 (m)
             obj.DESIRED_TIME_HEADWAY = 1.3; % 車両の目標時間間隔 (s)
             obj.COMFORTABLE_DECELERATION = 2.5; % 快適減速度 (m/s^2)
+
             obj.MIN_VELOCITY = 0; % 車両の最小速度 (m/s)
             obj.MAX_VELOCITY = 30; % 車両の最大速度 (m/s)
-            obj.REFERENCE_VELOCITY = obj.MAX_VELOCITY; % 参照速度 (m/s)
             obj.MIN_ACCELERATION = -3; % 車両の最小加速度 (m/s^2)
             obj.MAX_ACCELERATION = 2; % 車両の最大加速度 (m/s^2)
         end
@@ -96,6 +99,11 @@ classdef Vehicle<handle
         function set_init_velocity(obj, init_velocity_m_s)
             % 車両の初期速度を設定する
             obj.velocity = init_velocity_m_s;
+        end
+
+        function set_reference_position(obj, reference_position_m)
+            % 車両の参照位置を設定する
+            obj.REFERENCE_POSITION = reference_position_m;
         end
 
         function set_reference_velocity(obj, reference_velocity_m_s)
@@ -145,7 +153,6 @@ classdef Vehicle<handle
             if isempty(lead_vehicle)
                 obj.input = (obj.REFERENCE_VELOCITY - obj.velocity) / obj.TIME_STEP; % 目標速度に向かう加速度
             else
-                obj.Lead_VEHICLE_ID = lead_vehicle.VEHICLE_ID;
                 % 車間距離と相対速度を計算する
                 distance = lead_vehicle.position - obj.position - lead_vehicle.LENGTH; % 車間距離 (m)
                 relative_velocity = obj.velocity - lead_vehicle.velocity; % 相対速度 (m/s)
@@ -165,7 +172,7 @@ classdef Vehicle<handle
             end
         end
 
-        function mpc(obj, lead_vehicle, follow_vehicle, ratio)
+        function mpc(obj, lead_vehicle, follow_vehicle)
             % MPCを使用して車両の加速度を計算する
             % 状態は[位置, 速度]
             % 入力は加速度
@@ -176,9 +183,6 @@ classdef Vehicle<handle
                 obj.idm(lead_vehicle); % IDMを使用して加速度を計算
                 return;
             end
-
-            obj.Lead_VEHICLE_ID = lead_vehicle.VEHICLE_ID; % 前方車両のIDを設定
-            obj.Follow_VEHICLE_ID = follow_vehicle.VEHICLE_ID; % 後方車両のIDを設定
 
             % 初期解を設定する
             u0 = zeros(obj.PREDICTION_HORIZON, 1);
@@ -203,17 +207,15 @@ classdef Vehicle<handle
             b(2*obj.PREDICTION_HORIZON+2:2:end) = b(2*obj.PREDICTION_HORIZON+2:2:end) - repmat(obj.MIN_VELOCITY, obj.PREDICTION_HORIZON, 1);
 
             % エゴ車両の目標状態を設定する
-            reference_status = (1-ratio)*lead_vehicle_status + ratio*follow_vehicle_status;
+            reference_velocity = lead_vehicle_status(2:2:end); % 目標速度
 
             % 評価関数を設定する
-            alpha = 1; % 入力の重み
-            beta = 1; % 先行車両の速度に追従する重み
-            gamma = 1; % 目標位置に追従する重み
-            delta = 0; % ジャークの重み
-            fun = @(u) alpha * sum(u.^2) + ...
-                        beta * (sum((F_matrix(2:2:end, :) * init_ego_vehicle_status + G_matrix(2:2:end, :) * u - lead_vehicle_status(2:2:end)).^2)) + ...
-                        gamma * (sum((F_matrix(1:2:end-1, :) * init_ego_vehicle_status + G_matrix(1:2:end-1, :) * u - reference_status(1:2:end-1)).^2)) + ...
-                        delta * sum((diff(u) / obj.TIME_STEP).^2); % 評価関数
+            input_weight = 1; % 入力の重み
+            reference_status_weight = 1; % 目標状態に追従する重み
+            jerk_weight = 0; % ジャークの重み
+            fun = @(u) input_weight * sum(u.^2) + ...
+                    reference_status_weight * sum((F_matrix(2:2:end, :)*init_ego_vehicle_status + G_matrix(2:2:end, :)*u - reference_velocity).^2) + ... % 目標状態に追従する重み
+                    jerk_weight * sum((u(2:end) - u(1:end-1)).^2); % ジャークの重み
 
             % 最適化問題を解く
             u = fmincon(fun, u0, A, b, [], [], lb, ub);

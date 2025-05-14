@@ -13,15 +13,17 @@ LaneMerge.add_Lane(OnRamp); % 合流車線の追加
 % 本線の車両を追加
 for id = 1:16
     MainLine_Vehicle_Distance = 60; % 車両間隔 (m)
+    MainLine_Vehicle_Speed = 15; % 車両速度 (m/s)
     % 車両を本線に追加
-    MainLine.add_Vehicle(Vehicle(sprintf('MainLine_Vehicle_%d', id), 'CAR'), MainLine.END_POSITION - MainLine_Vehicle_Distance*(id - 1), 15);
+    MainLine.add_Vehicle(Vehicle(sprintf('MainLine_Vehicle_%d', id), 'CAR'), MainLine.END_POSITION - MainLine_Vehicle_Distance*(id - 1), MainLine_Vehicle_Speed);
 end
 
 % 合流車線の車両を追加
 for id = 1:1
     OnRamp_Vehicle_Distance = 100; % 車両間隔 (m)
+    OnRamp_Vehicle_Speed = 10; % 車両速度 (m/s)
     % 車両を合流車線に追加
-    OnRamp.add_Vehicle(Vehicle(sprintf('OnRamp_Vehicle_%d', id), 'CAR'), - OnRamp_Vehicle_Distance*(id - 1), 10);
+    OnRamp.add_Vehicle(Vehicle(sprintf('OnRamp_Vehicle_%d', id), 'CAR'), - OnRamp_Vehicle_Distance*(id - 1), OnRamp_Vehicle_Speed);
 end
 
 hFig=figure; set(hFig, 'position', [20,300,1000,200]);
@@ -58,8 +60,8 @@ for step = 1 : 300
     end
 
     % フレームを動画に追加
-    % frame = getframe(hFig);
-    % writeVideo(video_writer, frame);
+    frame = getframe(hFig);
+    writeVideo(video_writer, frame);
 
     time = step * TIME_STEP; % 現在の時間
 
@@ -85,7 +87,7 @@ for step = 1 : 300
         if vehicle.position > 0
             lead_vehicle_in_MainLine = MainLine.get_lead_vehicle(vehicle.position);
             follow_vehicle_in_MainLine = MainLine.get_follow_vehicle(vehicle.position);
-            vehicle.mpc(lead_vehicle_in_MainLine, follow_vehicle_in_MainLine, 0.3);
+            vehicle.mpc(lead_vehicle_in_MainLine, follow_vehicle_in_MainLine);
         else
             lead_vehicle_in_OnLamp = OnRamp.get_lead_vehicle(vehicle.position);
             vehicle.idm(lead_vehicle_in_OnLamp);
@@ -106,9 +108,8 @@ end
 
 % 動画保存を終了
 close(video_writer);
-PlotVehicleData;
-
 close all;
+PlotVehicleData;
 
 function save_vehicle_state_to_csv(Vehicle, time, output_folder)
     % ビークルの状態をCSVファイルに保存する
