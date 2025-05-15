@@ -1,11 +1,9 @@
-clear
-close all
+Setup;
 
-config;
 LaneMerge = Map('MPCLaneMerge'); % 地図の初期化
 
-MainLine = Lane('MainLine', 0, 500, 25); % 本線の初期化
-OnRamp = Lane('OnRamp', 0, 400, 20); % 合流車線の初期化
+MainLine = Lane('MainLine', 0, X_MAX, 20); % 本線の初期化
+OnRamp = Lane('OnRamp', 0, MERGE_POSITION, 20); % 合流車線の初期化
 
 LaneMerge.add_Lane(MainLine); % 本線の追加
 LaneMerge.add_Lane(OnRamp); % 合流車線の追加
@@ -13,97 +11,87 @@ LaneMerge.add_Lane(OnRamp); % 合流車線の追加
 % 本線の車両を追加
 for id = 1:16
     MainLine_Vehicle_Distance = 60; % 車両間隔 (m)
-    MainLine_Vehicle_Speed = 15; % 車両速度 (m/s)
+    MainLine_Vehicle_Velocity = MainLine.REFERENCE_VELOCITY; % 車両速度 (m/s)
     % 車両を本線に追加
-    MainLine.add_Vehicle(Vehicle(sprintf('MainLine_Vehicle_%d', id), 'CAR'), MainLine.END_POSITION - MainLine_Vehicle_Distance*(id - 1), MainLine_Vehicle_Speed);
+    MainLine.add_Vehicle(Vehicle(sprintf('MainLine_Vehicle_%d', id), 'CAR'), MainLine.END_POSITION - MainLine_Vehicle_Distance*(id - 1), MainLine_Vehicle_Velocity);
 end
 
 % 合流車線の車両を追加
 for id = 1:1
     OnRamp_Vehicle_Distance = 100; % 車両間隔 (m)
-    OnRamp_Vehicle_Speed = 10; % 車両速度 (m/s)
+    OnRamp_Vehicle_Velocity = OnRamp.REFERENCE_VELOCITY; % 車両速度 (m/s)
     % 車両を合流車線に追加
-    OnRamp.add_Vehicle(Vehicle(sprintf('OnRamp_Vehicle_%d', id), 'CAR'), - OnRamp_Vehicle_Distance*(id - 1), OnRamp_Vehicle_Speed);
+    OnRamp.add_Vehicle(Vehicle(sprintf('OnRamp_Vehicle_%d', id), 'CAR'), - OnRamp_Vehicle_Distance*(id - 1), OnRamp_Vehicle_Velocity);
 end
-
-hFig=figure; set(hFig, 'position', [20,300,1000,200]);
-Garea1=[0,500]; Garea2=[5.5,5.5]+1;
-area(Garea1,Garea2, 'FaceColor',[0.65 0.995 0.95]); hold on;
-
-% 結果を保存するフォルダを作成
-output_folder = 'result';
-if exist(output_folder, 'dir')
-    rmdir(output_folder, 's'); % フォルダを削除
-end
-mkdir(output_folder); % 新しいフォルダを作成
-
-% 動画保存の設定
-video_filename = fullfile(output_folder, 'simulation_record.avi');
-video_writer = VideoWriter(video_filename);
-open(video_writer);
-
-% 道路の描画
-xr1=0.:50:450; % 道路位置
-yr1=(4-2.8./(1.+exp(-0.02*(xr1-200.0)))); % 道路形状の曲線
-plot(xr1,yr1,'LineWidth',10,'Color',[0.7 0.7 0.7]);
-plot([0;500], [1;1],'LineWidth',10,'Color',[0.7 0.7 0.7]);
-
-fm = 1;
-plt = [];
 
 % シミュレーション時間のループ
 for step = 1 : 300
-    if(mod(step, 5)==1)
-        delete(plt);
-        TrafficPlot;
-
-    end
-
-    % フレームを動画に追加
-    frame = getframe(hFig);
-    writeVideo(video_writer, frame);
 
     time = step * TIME_STEP; % 現在の時間
 
+    % 描写の更新
+    if(mod(10*time, 10*VIDEO_UPDATE_INTERVAL) == 0)
+        delete(plt);
+        PlotTraffic;
+
+        % フレームを動画に追加
+        frame = getframe(hFig);
+        writeVideo(video_writer, frame);
+    end
+
+    %各車両の更新
     % 本線車両の更新
     mainline_vehicles = values(MainLine.Vehicles);
-    for vehicle = mainline_vehicles'
-        % ビークルの状態をCSVに保存
-        save_vehicle_state_to_csv(vehicle, time, output_folder);
+    for mainline_vehicle = mainline_vehicles'
 
-        lead_vehicle_in_MainLine = MainLine.get_lead_vehicle(vehicle.position);
-        vehicle.idm(lead_vehicle_in_MainLine);
+        if(mod(10*time, 10*INPUT_UPDATE_INTERVAL) == 0)
+            save_vehicle_state_to_csv(mainline_vehicle, time, output_folder);
 
-        vehicle.update();
+            if contains(mainline_vehicle.VEHICLE_ID, 'MainLine')
+                mainline_vehicle.constant_speed()
+
+                % lead_vehicle_in_MainLine = MainLine.get_lead_vehicle(mainline_vehicle.position);
+                % mainline_vehicle.idm(lead_vehicle_in_MainLine);
+            elseif contains(mainline_vehicle.VEHICLE_ID, 'OnRamp')
+                lead_vehicle_in_MainLine = MainLine.get_lead_vehicle(mainline_vehicle.position);
+                follow_vehicle_in_MainLine = MainLine.get_follow_vehicle(mainline_vehicle.position);
+                mainline_vehicle.mpc(lead_vehicle_in_MainLine, follow_vehicle_in_MainLine);
+            end
+        end
+
+        mainline_vehicle.update();
 
     end
 
     % 合流車線車両の更新
-    onlamp_vehicles = values(OnRamp.Vehicles);
-    for vehicle = onlamp_vehicles'
-        % ビークルの状態をCSVに保存
-        save_vehicle_state_to_csv(vehicle, time, output_folder);
+    onramp_vehicles = values(OnRamp.Vehicles);
+    for onramp_vehicle = onramp_vehicles'
 
-        if vehicle.position > 0
-            lead_vehicle_in_MainLine = MainLine.get_lead_vehicle(vehicle.position);
-            follow_vehicle_in_MainLine = MainLine.get_follow_vehicle(vehicle.position);
-            vehicle.mpc(lead_vehicle_in_MainLine, follow_vehicle_in_MainLine);
-        else
-            lead_vehicle_in_OnLamp = OnRamp.get_lead_vehicle(vehicle.position);
-            vehicle.idm(lead_vehicle_in_OnLamp);
+        if(mod(10*time, 10*INPUT_UPDATE_INTERVAL) == 0)
+            save_vehicle_state_to_csv(onramp_vehicle, time, output_folder);
+
+            if onramp_vehicle.position > 0
+                lead_vehicle_in_MainLine = MainLine.get_lead_vehicle(onramp_vehicle.position);
+                follow_vehicle_in_MainLine = MainLine.get_follow_vehicle(onramp_vehicle.position);
+                onramp_vehicle.mpc(lead_vehicle_in_MainLine, follow_vehicle_in_MainLine);
+            else
+                lead_vehicle_in_OnLamp = OnRamp.get_lead_vehicle(onramp_vehicle.position);
+                onramp_vehicle.idm(lead_vehicle_in_OnLamp);
+            end
         end
 
-        vehicle.update();
+        onramp_vehicle.update();
 
-        if vehicle.position > 400
+        if onramp_vehicle.position > MERGE_POSITION
             MainLine.add_Vehicle(vehicle, vehicle.position, vehicle.velocity);
             OnRamp.remove_Vehicle(vehicle.VEHICLE_ID);
         end
     end
 
-    if isempty(mainline_vehicles) && isempty(onlamp_vehicles)
+    if isempty(mainline_vehicles) && isempty(onramp_vehicles)
         break;
     end
+
 end
 
 % 動画保存を終了
@@ -126,4 +114,48 @@ function save_vehicle_state_to_csv(Vehicle, time, output_folder)
 
     % データを追記
     writematrix(data, filename, 'WriteMode', 'append');
+end
+
+%N = PREDICTION_HORIZON; % 予測ホライズン
+%h = TIME_STEP; % タイムステップ (s)
+function F_matrix = get_F_matrix(N, h)
+    % x(k+1) = Ax(k) + Bu(k)
+    % X = [x1,x2,...xN]'
+    % X = Fx0 + GU
+    A_matrix = [1 h;
+                0 1];
+
+    F_matrix = zeros(2*N, 2);
+    for k = 1:N
+        F_matrix(2*k-1:2*k, 1:2) = A_matrix^k;
+    end
+end
+
+function G_matrix = get_G_matrix(N, h)
+    % x(k+1) = Ax(k) + Bu(k)
+    % X = [x1,x2,...xN]'
+    % X = Fx0 + GU
+    A_matrix = [1 h;
+                0 1];
+    B_matrix = [0.5*h^2;
+                h];
+    G_matrix = zeros(2*N, N);
+
+    for i = 1:N
+        for j = 1:i
+            G_matrix(2*i-1:2*i, j) = (A_matrix^(i-j)) * B_matrix;
+        end
+    end
+end
+
+function status = predict_vehicle_status(vehicle, N, h)
+    % 車両の状態を予測する
+    % x(k)=[位置，速度]'
+    % x(k+1) = Ax(k) + Bu(k)
+    % X = [x1,x2,...,xN]'
+    % X = Fx0 + GU
+
+    x0 = [vehicle.position; vehicle.velocity]; % 車両の初期状態
+    F_matrix = get_F_matrix(N, h); % F行列を取得
+    status = F_matrix*x0; % 車両の状態を予測する
 end

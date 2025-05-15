@@ -21,6 +21,8 @@ classdef Vehicle<handle
         REFERENCE_POSITION = [] % 参照位置 (m)
         REFERENCE_VELOCITY = [] % 参照速度 (m/s)
 
+        REACTION_TIME = [] % 車両の反応時間 (s)
+        BRAKE_COORDINATION = [] % 車両のブレーキコーディネーション (s)
         MIN_DISTANCE = [] % 車両の最小車間距離 (m)
         DESIRED_TIME_HEADWAY = [] % 車両の目標時間間隔 (s)
         COMFORTABLE_DECELERATION = [] % 快適減速度 (m/s^2)
@@ -66,14 +68,16 @@ classdef Vehicle<handle
             obj.REFERENCE_POSITION = 0; % 参照位置 (m)
             obj.REFERENCE_VELOCITY = obj.MAX_VELOCITY; % 参照速度 (m/s)
 
+            obj.REACTION_TIME = 1.0; % 車両の反応時間 (s)
+            obj.BRAKE_COORDINATION = 0.2; % 車両のブレーキコーディネーション (s)
             obj.MIN_DISTANCE = 1.5; % 車両の最小車間距離 (m)
-            obj.DESIRED_TIME_HEADWAY = 1.3; % 車両の目標時間間隔 (s)
+            obj.DESIRED_TIME_HEADWAY = obj.REACTION_TIME + obj.BRAKE_COORDINATION; % 車両の目標時間間隔 (s)
             obj.COMFORTABLE_DECELERATION = 2.5; % 快適減速度 (m/s^2)
 
-            obj.MIN_VELOCITY = 0; % 車両の最小速度 (m/s)
+            obj.MIN_VELOCITY = 5; % 車両の最小速度 (m/s)
             obj.MAX_VELOCITY = 30; % 車両の最大速度 (m/s)
-            obj.MIN_ACCELERATION = -3; % 車両の最小加速度 (m/s^2)
-            obj.MAX_ACCELERATION = 2; % 車両の最大加速度 (m/s^2)
+            obj.MIN_ACCELERATION = -5; % 車両の最小加速度 (m/s^2)
+            obj.MAX_ACCELERATION = 5; % 車両の最大加速度 (m/s^2)
         end
 
         function set_Lead_VEHICLE_ID(obj, Lead_VEHICLE_ID)
@@ -138,11 +142,11 @@ classdef Vehicle<handle
             end
         end
 
-        function constant_speed(obj, velocity_m_s)
-            if obj.velocity == velocity_m_s
+        function constant_speed(obj)
+            if obj.velocity == obj.REFERENCE_VELOCITY
                 obj.input = 0; % 車両の加速度を0に設定
             else
-                obj.input = (velocity_m_s - obj.velocity) / obj.TIME_STEP; % 目標速度に向かう加速度
+                obj.input = (obj.REFERENCE_VELOCITY - obj.velocity) / obj.TIME_STEP; % 目標速度に向かう加速度
             end
         end
 
@@ -192,15 +196,17 @@ classdef Vehicle<handle
             ub = [repmat(obj.MAX_ACCELERATION, obj.PREDICTION_HORIZON, 1)];
 
             % 周囲の車両の状態を予測する
-            lead_vehicle_status = predict_surround_vehicle_status(lead_vehicle, obj.PREDICTION_HORIZON, obj.TIME_STEP); % 前方車両の状態を予測する
-            follow_vehicle_status = predict_surround_vehicle_status(follow_vehicle, obj.PREDICTION_HORIZON, obj.TIME_STEP); % 後方車両の状態を予測する
+            lead_vehicle_status = predict_vehicle_status(lead_vehicle, obj.PREDICTION_HORIZON, obj.TIME_STEP); % 前方車両の状態を予測する
+            follow_vehicle_status = predict_vehicle_status(follow_vehicle, obj.PREDICTION_HORIZON, obj.TIME_STEP); % 後方車両の状態を予測する
 
             % 不等式制約を設定する
             init_ego_vehicle_status = [obj.position; obj.velocity]; % ホスト車両の状態
             F_matrix = get_F_matrix(obj.PREDICTION_HORIZON, obj.TIME_STEP); % F行列を取得
             G_matrix = get_G_matrix(obj.PREDICTION_HORIZON, obj.TIME_STEP); % G行列を取得
+
             A = [G_matrix; -G_matrix];
             b = [-F_matrix*init_ego_vehicle_status; F_matrix*init_ego_vehicle_status]; % 不等式制約
+
             b(1:2:2*obj.PREDICTION_HORIZON-1) = b(1:2:2*obj.PREDICTION_HORIZON-1) + lead_vehicle_status(1:2:end-1) - obj.MIN_DISTANCE; % 車間距離の制約
             b(2*obj.PREDICTION_HORIZON+1:2:end-1) = b(2*obj.PREDICTION_HORIZON+1:2:end-1) - follow_vehicle_status(1:2:end-1) + obj.MIN_DISTANCE; % 車間距離の制約
             b(2:2:2*obj.PREDICTION_HORIZON) = b(2:2:2*obj.PREDICTION_HORIZON) + repmat(obj.MAX_VELOCITY, obj.PREDICTION_HORIZON, 1);
@@ -258,7 +264,7 @@ function G_matrix = get_G_matrix(N, h)
     end
 end
 
-function status = predict_surround_vehicle_status(vehicle, N, h)
+function status = predict_vehicle_status(vehicle, N, h)
     % 車両の状態を予測する
     % x(k)=[位置，速度]'
     % x(k+1) = Ax(k) + Bu(k)
