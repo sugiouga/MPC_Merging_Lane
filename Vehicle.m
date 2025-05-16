@@ -68,8 +68,8 @@ classdef Vehicle<handle
             obj.REFERENCE_POSITION = 0; % 参照位置 (m)
             obj.REFERENCE_VELOCITY = obj.MAX_VELOCITY; % 参照速度 (m/s)
 
-            obj.REACTION_TIME = 1.0; % 車両の反応時間 (s)
-            obj.BRAKE_COORDINATION = 0.2; % 車両のブレーキコーディネーション (s)
+            obj.REACTION_TIME = REACTION_TIME; % 車両の反応時間 (s)
+            obj.BRAKE_COORDINATION = BRAKE_COORDINATION; % 車両のブレーキコーディネーション (s)
             obj.MIN_DISTANCE = 1.5; % 車両の最小車間距離 (m)
             obj.DESIRED_TIME_HEADWAY = obj.REACTION_TIME + obj.BRAKE_COORDINATION; % 車両の目標時間間隔 (s)
             obj.COMFORTABLE_DECELERATION = 2.5; % 快適減速度 (m/s^2)
